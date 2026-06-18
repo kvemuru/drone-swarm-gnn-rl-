@@ -20,4 +20,4 @@ class GNNLayer(nn.Module):
         weights = torch.softmax(scores, dim=1)
 
         agg = torch.sum(weights.unsqueeze(-1) * neigh_emb, dim=1)
-        return F.relu(self_emb + agg)
+        return F.relu(self_emb + agg), neigh_emb

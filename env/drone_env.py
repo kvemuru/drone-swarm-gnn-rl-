@@ -1,4 +1,5 @@
 import numpy as np
+from gymnasium import spaces
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 
 class DroneSwarmEnv(MultiAgentEnv):
@@ -10,9 +11,22 @@ class DroneSwarmEnv(MultiAgentEnv):
         self.dt = config["physics"]["dt"]
 
         self.agents = [f"drone_{i}" for i in range(self.n)]
+        self.possible_agents = self.agents[:]
+        self.max_steps = config["env"]["max_steps"]
+        self._step_count = 0
+
+        self.action_space = spaces.Discrete(5)
+        self.observation_space = spaces.Dict({
+            "self": spaces.Box(-np.inf, np.inf, shape=(4,), dtype=np.float32),
+            "neighbors": spaces.Box(-np.inf, np.inf, shape=(self.n - 1, 4), dtype=np.float32),
+            "mask": spaces.Box(0, 1, shape=(self.n - 1,), dtype=np.float32),
+        })
+
         self.reset()
 
     def reset(self, *, seed=None, options=None):
+        super().reset(seed=seed, options=options)
+        self._step_count = 0
         self.positions = {a: np.random.rand(2)*self.map_size for a in self.agents}
         self.velocities = {a: np.zeros(2) for a in self.agents}
 
@@ -24,6 +38,7 @@ class DroneSwarmEnv(MultiAgentEnv):
         return self._obs(), {}
 
     def step(self, actions):
+        self._step_count += 1
         rewards = {}
 
         for a, act in actions.items():
@@ -41,9 +56,12 @@ class DroneSwarmEnv(MultiAgentEnv):
 
             rewards[a] = reward
 
-        done = all(not r["alive"] for r in self.radars)
+        all_destroyed = all(not r["alive"] for r in self.radars)
+        done = all_destroyed or self._step_count >= self.max_steps
+        terminations = {a: done for a in self.agents}
+        terminations["__all__"] = done
 
-        return self._obs(), rewards, {"__all__": done}, {"__all__": False}, {}
+        return self._obs(), rewards, terminations, {"__all__": False}, {}
 
     def _action_to_accel(self, act):
         mapping = {

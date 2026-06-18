@@ -18,7 +18,7 @@ class GNNMAPPOModel(TorchModelV2, nn.Module):
         )
 
         self.critic = nn.Sequential(
-            nn.Linear(128 * 4, 256),
+            nn.Linear(128, 256),
             nn.ReLU(),
             nn.Linear(256, 1)
         )
@@ -26,11 +26,11 @@ class GNNMAPPOModel(TorchModelV2, nn.Module):
     def forward(self, input_dict, state, seq_lens):
         obs = input_dict["obs"]
 
-        x = self.gnn1(obs["self"], obs["neighbors"], obs["mask"])
-        x = self.gnn2(x, obs["neighbors"], obs["mask"])
+        x, neigh = self.gnn1(obs["self"], obs["neighbors"], obs["mask"])
+        x, _ = self.gnn2(x, neigh, obs["mask"])
 
         self._last_x = x
         return self.actor(x), state
 
     def value_function(self):
-        return self.critic(self._last_x.view(self._last_x.shape[0], -1)).squeeze(-1)
+        return self.critic(self._last_x).squeeze(-1)
