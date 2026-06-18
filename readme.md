@@ -1,6 +1,6 @@
 # Drone Swarm GNN-RL
 
-Multi-agent reinforcement learning for drone swarms using Graph Neural Networks (GNN) with PPO. Drones cooperatively neutralize moving radar targets in a 2D environment.
+Multi-agent reinforcement learning for drone swarms using a Graph Neural Network (GNN) with PPO in Ray RLlib. Drones cooperatively neutralize moving radar targets in a 2D environment using continuous acceleration control. The architecture uses a GNN with attention and edge features (relative position, distance) for communication, a centralized critic that observes the full global state for stable value estimation, and a count-based intrinsic exploration bonus to encourage coverage. Radars are dynamic — they wander and evade nearby drones — making the task more challenging and realistic.
 
 ## Architecture
 
