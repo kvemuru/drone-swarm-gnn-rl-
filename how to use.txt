@@ -1,0 +1,5 @@
+#how to use
+git clone <repo>
+cd drone-swarm-gnn-mappo
+pip install -r requirements.txt
+python train.py

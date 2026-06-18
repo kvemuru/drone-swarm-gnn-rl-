@@ -1,0 +1,24 @@
+env:
+  num_drones: 4
+  num_radars: 3
+  map_size: 200
+  max_steps: 800
+
+physics:
+  dt: 0.1
+  max_acceleration: 2.0
+  drag_coeff: 0.05
+
+communication:
+  message_dim: 8
+  comm_radius: 30
+
+training:
+  num_workers: 8
+  train_batch_size: 8000
+  lr: 0.0003
+  gamma: 0.99
+  framework: torch
+
+model:
+  hidden_dim: 128
