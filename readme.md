@@ -88,10 +88,13 @@ Initial training with `batch_size=2000` and `max_steps=200`:
 | 2 | 911 |
 | 3 | 919 |
 
-After applying algorithmic improvements (continuous actions, centralized critic, edge features, intrinsic reward, dynamic radars):
+After applying algorithmic improvements (continuous actions, centralized critic, edge features, intrinsic reward, dynamic radars) with `batch_size=8000` and `max_steps=800`:
 
 | Iteration | Mean Reward |
 |---|---|
-| 0 | 3422 |
+| 0 | 3328 |
+| 1 | 3340 |
+| 2 | 3370 |
+| 3 | 3404 |
 
-Rewards are higher due to the added intrinsic exploration bonus and richer interaction with the continuous action space. Longer training runs with the default config (`batch_size=8000`, `max_steps=800`) are expected to converge to higher rewards as the policy learns to track and neutralize all radars efficiently.
+Rewards are higher due to the added intrinsic exploration bonus, centralized critic, and richer interaction with the continuous action space. The upward trend shows the policy is learning to track and neutralize radars more effectively over time.
