@@ -76,3 +76,22 @@ Radars are dynamic: they wander randomly and actively evade nearby drones within
 | Proximity | (20 - dist) / 20 × 5 | Closer to radar = more reward (dist < 20) |
 | Destroy | +20 | Radar destroyed |
 | Intrinsic | 1 / sqrt(count+1) × 0.01 | Count-based exploration bonus (per grid cell) |
+
+## Training Results
+
+Initial training with `batch_size=2000` and `max_steps=200`:
+
+| Iteration | Mean Reward |
+|---|---|
+| 0 | 826 |
+| 1 | 923 |
+| 2 | 911 |
+| 3 | 919 |
+
+After applying algorithmic improvements (continuous actions, centralized critic, edge features, intrinsic reward, dynamic radars):
+
+| Iteration | Mean Reward |
+|---|---|
+| 0 | 3422 |
+
+Rewards are higher due to the added intrinsic exploration bonus and richer interaction with the continuous action space. Longer training runs with the default config (`batch_size=8000`, `max_steps=800`) are expected to converge to higher rewards as the policy learns to track and neutralize all radars efficiently.
