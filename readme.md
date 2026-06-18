@@ -1,23 +1,23 @@
 # Drone Swarm GNN-RL
 
-Multi-agent reinforcement learning for drone swarms using Graph Neural Networks (GNN) with PPO. Drones cooperatively neutralize radar targets in a 2D environment.
+Multi-agent reinforcement learning for drone swarms using Graph Neural Networks (GNN) with PPO. Drones cooperatively neutralize moving radar targets in a 2D environment.
 
 ## Architecture
 
 ```
-Drone Observations → Graph Construction → GNN Layer 1 → GNN Layer 2
-→ Agent Embeddings → Actor Network → Actions
-                   → Centralized Critic → Value Function
+Drone Observations → Graph Construction → GNN Layer 1 (with edge features) → GNN Layer 2
+→ Agent Embeddings → Actor Network → Continuous Actions
+                   → Centralized Critic (global state) → Value Function
 ```
 
-Each drone observes its own position/velocity and communicates with nearby drones (within `comm_radius`). A GNN with attention aggregates neighbor information to produce shared embeddings, which feed into a shared PPO policy with a centralized value function.
+Each drone observes its own position/velocity and communicates with nearby drones (within `comm_radius`). A GNN with attention and edge features (relative position, distance) aggregates neighbor information. The actor produces continuous acceleration commands, while a centralized critic sees the full global state for value estimation.
 
 ## Project Structure
 
 ```
 ├── env/drone_env.py          # Multi-agent environment (DroneSwarmEnv)
 ├── models/
-│   ├── gnn_layer.py          # GNN layer with attention
+│   ├── gnn_layer.py          # GNN layer with attention, edge features, LayerNorm
 │   └── gnn_mappo_model.py    # Custom TorchModelV2 for RLlib
 ├── config.yaml               # Hyperparameters
 ├── train.py                  # Training entry point
@@ -52,10 +52,27 @@ Edit `config.yaml`:
 python train.py
 ```
 
-The environment resets when all radars are destroyed or `max_steps` is reached. Drones receive reward for proximity to radars (+10) and destroying them (+20), plus a step bonus (+1).
+The environment resets when all radars are destroyed or `max_steps` is reached.
 
 ## Environment
 
-- **Action space**: `Discrete(5)` — move N/S/E/W or stay
-- **Observation**: Dict with `self` (pos+vel, 4-dim), `neighbors` (n-1 agents × 4), and `mask` (visibility)
-- **Termination**: All radars destroyed or max steps exceeded
+- **Action space**: `Box(-1, 1, shape=(2,))` — continuous acceleration (ax, ay), scaled by `max_acceleration`
+- **Observation**: Dict with:
+  - `self` (4) — own position + velocity
+  - `neighbors` (n-1 × 4) — nearby drones' pos + vel (zero-padded with mask)
+  - `mask` (n-1) — visibility mask for neighbors
+  - `global_state` (n × 4) — all agents' pos + vel concatenated (for centralized critic)
+- **Termination**: All radars destroyed or `max_steps` exceeded
+
+## Radars
+
+Radars are dynamic: they wander randomly and actively evade nearby drones within a detect range. Drones destroy a radar by getting close (dist < 5) with low velocity (jamming).
+
+## Rewards
+
+| Source | Value | Description |
+|---|---|---|
+| Step bonus | +1 | Per agent per step |
+| Proximity | (20 - dist) / 20 × 5 | Closer to radar = more reward (dist < 20) |
+| Destroy | +20 | Radar destroyed |
+| Intrinsic | 1 / sqrt(count+1) × 0.01 | Count-based exploration bonus (per grid cell) |
