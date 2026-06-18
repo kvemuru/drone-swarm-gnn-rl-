@@ -1,3 +1,4 @@
+import os
 import ray
 import yaml
 from ray.rllib.algorithms.ppo import PPOConfig
@@ -13,6 +14,8 @@ with open("config.yaml") as f:
 
 ray.init()
 
+num_workers = min(cfg["training"]["num_workers"], os.cpu_count() or 1)
+
 config = (
     PPOConfig()
     .api_stack(
@@ -21,16 +24,22 @@ config = (
     )
     .environment(env=DroneSwarmEnv, env_config=cfg)
     .framework("torch")
-    .env_runners(num_env_runners=cfg["training"]["num_workers"])
+    .env_runners(num_env_runners=num_workers)
     .training(
-        model={"custom_model": "gnn_mappo"},
+        model={
+            "custom_model": "gnn_mappo",
+            "custom_model_config": {
+                "comm_radius": cfg["communication"]["comm_radius"],
+                "n_agents": cfg["env"]["num_drones"],
+            },
+        },
         train_batch_size=cfg["training"]["train_batch_size"],
         gamma=cfg["training"]["gamma"],
         lr=cfg["training"]["lr"],
     )
     .multi_agent(
         policies={"shared_policy"},
-        policy_mapping_fn=lambda *args, **kwargs: "shared_policy"
+        policy_mapping_fn=lambda *args, **kwargs: "shared_policy",
     )
 )
 
